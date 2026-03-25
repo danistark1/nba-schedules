@@ -1,19 +1,25 @@
 <?php
-// /var/www/nba-schedule/proxy.php
+// /var/www/html/nba-schedules/proxy.php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); // Allows your HTML to talk to this PHP script
+header('Access-Control-Allow-Origin: *');
 
 $apiKey = "3c323f46-9908-466d-961f-f4632863776d";
 $url = "https://api.balldontlie.io/v1/games?start_date=2026-03-25&end_date=2026-04-01";
 
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    "Authorization: $apiKey"
-]);
+// Using stream context instead of cURL to avoid extension issues
+$opts = [
+    "http" => [
+        "method" => "GET",
+        "header" => "Authorization: " . $apiKey . "\r\n"
+    ]
+];
 
-$response = curl_exec($ch);
-curl_close($ch);
+$context = stream_context_create($opts);
+$response = @file_get_contents($url, false, $context);
 
-echo $response;
+if ($response === FALSE) {
+    http_response_code(500);
+    echo json_encode(["error" => "PHP failed to fetch data. Check your internet connection on starkStation."]);
+} else {
+    echo $response;
+}
