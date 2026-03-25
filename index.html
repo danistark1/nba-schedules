@@ -85,16 +85,21 @@
 <script>
     async function fetchNBA() {
         try {
-            // Updated to be relative to the current directory
+            // Relative path ensures it looks in nba-schedules/proxy.php
             const response = await fetch('./proxy.php'); 
             
             if (!response.ok) {
-                throw new Error(`Proxy not found (404) or Server Error (500)`);
+                throw new Error(`HTTP Error: ${response.status}`);
             }
 
             const result = await response.json();
             const container = document.getElementById('schedule-container');
             container.innerHTML = '';
+
+            if (!result.data || result.data.length === 0) {
+                container.innerHTML = '<p style="text-align:center;">No games found for this week.</p>';
+                return;
+            }
 
             result.data.forEach(game => {
                 const card = document.createElement('div');
@@ -106,12 +111,12 @@
                 card.innerHTML = `
                     <div class="teams">
                         <div class="team">
-                            <img src="https://a.espncdn.com/i/teamlogos/nba/500/${homeAbbr}.png">
+                            <img src="https://a.espncdn.com/i/teamlogos/nba/500/${homeAbbr}.png" onerror="this.src='https://via.placeholder.com/70?text=${homeAbbr.toUpperCase()}'">
                             <div class="team-name">${game.home_team.full_name}</div>
                         </div>
                         <div class="vs">VS</div>
                         <div class="team">
-                            <img src="https://a.espncdn.com/i/teamlogos/nba/500/${visitorAbbr}.png">
+                            <img src="https://a.espncdn.com/i/teamlogos/nba/500/${visitorAbbr}.png" onerror="this.src='https://via.placeholder.com/70?text=${visitorAbbr.toUpperCase()}'">
                             <div class="team-name">${game.visitor_team.full_name}</div>
                         </div>
                     </div>
@@ -122,16 +127,13 @@
                 container.appendChild(card);
             });
         } catch (e) {
-            console.error(e);
+            console.error("Fetch Error:", e);
             document.getElementById('schedule-container').innerHTML = 
-                `<div style="text-align:center; padding:20px; color:#ff4b2b;">
-                    <strong>Data Sync Error:</strong><br>
-                    Make sure proxy.php is at: /var/www/html/nba-schedule/proxy.php
-                </div>`;
+                `<p style="color:red; text-align:center;">Connection Error: ${e.message}</p>`;
         }
     }
 
-    // Call the function correctly to avoid the SyntaxError
+    // Initialize the dashboard
     fetchNBA();
 </script>
 </body>
